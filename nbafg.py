@@ -753,6 +753,10 @@ def create_interactive_html(players_data):
     """
     Create an interactive HTML table with team filtering
     """
+    # Get current date for last updated
+    from datetime import datetime
+    current_date = datetime.now().strftime("%B %d, %Y")
+    
     # All 30 NBA teams - include all in dropdown even if some have no players
     all_nba_teams = ['ATL', 'BOS', 'BRK', 'CHO', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND', 'LAC', 'LAL', 
                      'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX', 'POR', 'SAC', 'SAS', 
@@ -968,7 +972,7 @@ def create_interactive_html(players_data):
 <body>
     <div class="container">
         <h1>🏀 NBA Player Field Goal Percentage Stats</h1>
-        <p class="subtitle">2024-2025 Season | Interactive Filtering by Team</p>
+        <p class="subtitle">2024-2026 Season(s) | Interactive Filtering by Team | Last Updated: {current_date}</p>
         
         <div class="controls">
             <label for="teamFilter">Filter by Team:</label>
