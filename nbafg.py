@@ -10,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import time
-import datetime
 
 def scrape_dunk_stats():
     """
@@ -752,9 +751,6 @@ def create_interactive_html(players_data):
     """
     Create an interactive HTML table with team filtering
     """
-    # Get today's date for last updated
-    today = datetime.date.today().strftime("%B %d, %Y")
-    
     # All 30 NBA teams - include all in dropdown even if some have no players
     all_nba_teams = ['ATL', 'BOS', 'BRK', 'CHO', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND', 'LAC', 'LAL', 
                      'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHX', 'POR', 'SAC', 'SAS', 
@@ -970,7 +966,7 @@ def create_interactive_html(players_data):
 <body>
     <div class="container">
         <h1>🏀 NBA Player Field Goal Percentage Stats</h1>
-        <p class="subtitle">2024-2026 Season(s) | Interactive Filtering by Team | Last Updated: {today}</p>
+        <p class="subtitle">2024-2025 Season | Interactive Filtering by Team</p>
         
         <div class="controls">
             <label for="teamFilter">Filter by Team:</label>
