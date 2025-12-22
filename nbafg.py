@@ -11,6 +11,8 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 import time
 
+# Last updated: December 22, 2025
+
 def scrape_dunk_stats():
     """
     Scrape NBA player dunk stats from basketball-reference.com shooting page
@@ -1115,7 +1117,7 @@ def create_interactive_html(players_data):
     return html_content
 
 
-def save_html(html_content, filename="nba_stats.html"):
+def save_html(html_content, filename="index.html"):
     """
     Save HTML content to file
     """
