@@ -119,10 +119,10 @@ def scrape_dunk_stats():
                 
                 col_values = [cell.text.strip() for cell in cells]
                 
-                # Find team - NBA team abbreviations
+                # Find team - NBA team abbreviations or 2TM (2 teams)
                 nba_teams = ['ATL', 'BOS', 'BRK', 'CHO', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND', 'LAC', 'LAL', 
                              'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHO', 'POR', 'SAC', 'SAS', 
-                             'TOR', 'UTA', 'WAS']
+                             'TOR', 'UTA', 'WAS', '2TM']
                 
                 team = None
                 for val in col_values:
@@ -381,10 +381,10 @@ def scrape_nba_stats():
                 
                 col_values = [cell.text.strip() for cell in cells]
                 
-                # Find team - NBA team abbreviations
+                # Find team - NBA team abbreviations or 2TM (2 teams)
                 nba_teams = ['ATL', 'BOS', 'BRK', 'CHO', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND', 'LAC', 'LAL', 
                              'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHO', 'POR', 'SAC', 'SAS', 
-                             'TOR', 'UTA', 'WAS']
+                             'TOR', 'UTA', 'WAS', '2TM']
                 
                 team = None
                 for val in col_values:
@@ -1132,6 +1132,68 @@ def save_html(html_content, filename="index.html"):
     return filepath
 
 
+def prefer_2tm_rows(players_data):
+    """
+    For players with multiple entries (different teams + 2TM), keep only the 2TM row.
+    This ensures we use combined stats for traded players.
+    """
+    # Group players by name
+    player_groups = {}
+    for player in players_data:
+        name = player['Player']
+        if name not in player_groups:
+            player_groups[name] = []
+        player_groups[name].append(player)
+    
+    # Process each player group
+    result = []
+    for name, entries in player_groups.items():
+        # Check if any entry has team='2TM'
+        two_tm_entries = [e for e in entries if e['Team'] == '2TM']
+        individual_team_entries = [e for e in entries if e['Team'] != '2TM']
+        
+        if two_tm_entries and individual_team_entries:
+            # Player has both 2TM and individual team rows - prefer 2TM
+            result.extend(two_tm_entries)
+            print(f"Using 2TM row for {name} (preferred over {len(individual_team_entries)} individual team rows)")
+        else:
+            # Player has only 2TM or only individual teams - keep all
+            result.extend(entries)
+    
+    return result
+
+
+def apply_manual_team_adjustments(players_data):
+    """
+    Apply manual team adjustments for recent trades.
+    For players with 2TM as their team, reassign to their final team.
+    """
+    # Trade adjustments as of January 2026
+    # Maps player name to final team assignment
+    adjustments = {
+        'CJ McCollum': 'ATL',  # Traded from WAS to ATL, use 2TM stats and assign to ATL
+        'Corey Kispert': 'ATL',  # Traded from WAS to ATL
+        'Trae Young': 'WAS',  # Traded from ATL to WAS
+        'Jeremiah Robinson-Earl': 'DAL',
+        'PJ Hall': 'CHO',
+        'RayJ Dennis': 'LAC',
+        'Christian Koloko': 'TOR',
+        'Isaac Jones': 'DET'  # Traded from ATL to WAS
+    }
+    
+    adjusted_count = 0
+    for player in players_data:
+        if player['Player'] in adjustments:
+            old_team = player['Team']
+            new_team = adjustments[player['Player']]
+            player['Team'] = new_team
+            print(f"✓ Adjusted {player['Player']}: {old_team} -> {new_team}")
+            adjusted_count += 1
+    
+    print(f"Total adjustments applied: {adjusted_count}")
+    return players_data
+
+
 def main():
     """
     Main function to orchestrate the table creation
@@ -1146,6 +1208,13 @@ def main():
         players_data = create_sample_data()
     
     print(f"Loaded {len(players_data)} players")
+    
+    # Prefer 2TM rows for players with multiple entries
+    players_data = prefer_2tm_rows(players_data)
+    print(f"After preferring 2TM rows: {len(players_data)} players")
+    
+    # Manual team adjustments for recent trades
+    players_data = apply_manual_team_adjustments(players_data)
     
     # Add calculated 'First Made' field
     players_data = add_first_made_calculation(players_data)
