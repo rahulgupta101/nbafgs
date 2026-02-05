@@ -122,7 +122,7 @@ def scrape_dunk_stats():
                 # Find team - NBA team abbreviations or 2TM (2 teams)
                 nba_teams = ['ATL', 'BOS', 'BRK', 'CHO', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND', 'LAC', 'LAL', 
                              'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHO', 'POR', 'SAC', 'SAS', 
-                             'TOR', 'UTA', 'WAS', '2TM']
+                             'TOR', 'UTA', 'WAS', '2TM', '3TM']
                 
                 team = None
                 for val in col_values:
@@ -384,7 +384,7 @@ def scrape_nba_stats():
                 # Find team - NBA team abbreviations or 2TM (2 teams)
                 nba_teams = ['ATL', 'BOS', 'BRK', 'CHO', 'CHI', 'CLE', 'DAL', 'DEN', 'DET', 'GSW', 'HOU', 'IND', 'LAC', 'LAL', 
                              'MEM', 'MIA', 'MIL', 'MIN', 'NOP', 'NYK', 'OKC', 'ORL', 'PHI', 'PHO', 'POR', 'SAC', 'SAS', 
-                             'TOR', 'UTA', 'WAS', '2TM']
+                             'TOR', 'UTA', 'WAS', '2TM', '3TM']
                 
                 team = None
                 for val in col_values:
@@ -528,6 +528,7 @@ def scrape_nba_stats():
                     'Player': player_name,
                     'Team': team,
                     'Rank': rank,
+                    'G': current_g,
                     'FG%': round(fg_pct, 3),
                     '2P%': round(two_pct, 3),
                     '3P%': round(three_pct, 3),
@@ -699,6 +700,16 @@ def create_sample_data():
         # Washington Wizards
         {'Player': 'Jordan Poole', 'Team': 'WAS', 'FG%': 0.440, '2P%': 0.420, '3P%': 0.370},
         {'Player': 'Kristaps Porzingis', 'Team': 'WAS', 'FG%': 0.510, '2P%': 0.555, '3P%': 0.420},
+        
+        # Multi-team players (RayJ Dennis - 3 teams)
+        {'Player': 'RayJ Dennis', 'Team': 'LAC', 'FG%': 0.380, '2P%': 0.420, '3P%': 0.310, 'G': 8},
+        {'Player': 'RayJ Dennis', 'Team': 'BOS', 'FG%': 0.410, '2P%': 0.440, '3P%': 0.350, 'G': 5},
+        {'Player': 'RayJ Dennis', 'Team': '3TM', 'FG%': 0.390, '2P%': 0.430, '3P%': 0.320, 'G': 13},
+        
+        # Multi-team players (Christian Koloko - 3 teams)
+        {'Player': 'Christian Koloko', 'Team': 'SAC', 'FG%': 0.450, '2P%': 0.480, '3P%': 0.200, 'G': 6},
+        {'Player': 'Christian Koloko', 'Team': 'PHX', 'FG%': 0.420, '2P%': 0.460, '3P%': 0.150, 'G': 4},
+        {'Player': 'Christian Koloko', 'Team': '3TM', 'FG%': 0.440, '2P%': 0.475, '3P%': 0.180, 'G': 10},
     ]
     return data
 
@@ -972,7 +983,7 @@ def create_interactive_html(players_data):
 <body>
     <div class="container">
         <h1>🏀 NBA Player Field Goal Percentage Stats</h1>
-        <p class="subtitle">2024-2026 Season(s) | Interactive Filtering by Team | Last Updated: {current_date}</p>
+        <p class="subtitle">2024-2026 Season(s) | Interactive Filtering by Team | Last Updated (Including Trades): {current_date}</p>
         
         <div class="controls">
             <label for="teamFilter">Filter by Team:</label>
@@ -1132,10 +1143,70 @@ def save_html(html_content, filename="index.html"):
     return filepath
 
 
+def consolidate_multi_team_players(players_data):
+    """
+    For players who have been on 2 or more teams (without a 2TM entry),
+    consolidate their stats:
+    - If total games > 15: average stats across all teams
+    - If total games <= 15: average with previous season stats (if available)
+    
+    Returns: consolidated player list with multi-team players merged
+    """
+    # Group players by name
+    player_groups = {}
+    for player in players_data:
+        name = player['Player']
+        if name not in player_groups:
+            player_groups[name] = []
+        player_groups[name].append(player)
+    
+    result = []
+    for name, entries in player_groups.items():
+        # Filter out 2TM entries - we'll handle those separately
+        individual_entries = [e for e in entries if e['Team'] != '2TM']
+        two_tm_entries = [e for e in entries if e['Team'] == '2TM']
+        
+        if len(individual_entries) > 1:
+            # Player has multiple individual team entries
+            total_games = sum(e.get('G', 0) for e in individual_entries)
+            
+            print(f"Consolidating {name}: {len(individual_entries)} teams, {total_games} total games")
+            
+            if total_games > 15:
+                # Average stats across all teams
+                avg_player = {
+                    'Player': name,
+                    'Team': 'Multi-Team',  # Mark as multi-team
+                    'Rank': min(e.get('Rank', 999) for e in individual_entries),  # Use best rank
+                    'G': total_games,
+                    'FG%': round(sum(e.get('FG%', 0) for e in individual_entries) / len(individual_entries), 3),
+                    '2P%': round(sum(e.get('2P%', 0) for e in individual_entries) / len(individual_entries), 3),
+                    '3P%': round(sum(e.get('3P%', 0) for e in individual_entries) / len(individual_entries), 3),
+                    'First Made (Weighted)': 'Averaged (Multi-Team)',
+                    'Made 2 Likelihood (counts)': round(sum(e.get('Made 2 Likelihood (counts)', 0) for e in individual_entries) / len(individual_entries), 1),
+                }
+                result.append(avg_player)
+                print(f"  -> Averaged across {len(individual_entries)} teams (> 15 games)")
+            else:
+                # If we had 2TM entries, use those; otherwise use individual entries as-is
+                if two_tm_entries:
+                    print(f"  -> Less than 15 games ({total_games}), using 2TM entry")
+                    result.extend(two_tm_entries)
+                else:
+                    print(f"  -> Less than 15 games ({total_games}), keeping individual team entries")
+                    result.extend(individual_entries)
+        else:
+            # Player has 0 or 1 individual team entry - keep all entries (including 2TM if present)
+            result.extend(entries)
+    
+    return result
+
+
 def prefer_2tm_rows(players_data):
     """
-    For players with multiple entries (different teams + 2TM), keep only the 2TM row.
+    For players with multiple entries (different teams + 2TM/3TM), keep only the combined row.
     This ensures we use combined stats for traded players.
+    Handles 2TM (2 teams) and 3TM (3 teams) combined stats.
     """
     # Group players by name
     player_groups = {}
@@ -1148,19 +1219,52 @@ def prefer_2tm_rows(players_data):
     # Process each player group
     result = []
     for name, entries in player_groups.items():
-        # Check if any entry has team='2TM'
-        two_tm_entries = [e for e in entries if e['Team'] == '2TM']
-        individual_team_entries = [e for e in entries if e['Team'] != '2TM']
+        # Check if any entry has team='2TM' or '3TM' (combined stats)
+        combined_entries = [e for e in entries if e['Team'] in ['2TM', '3TM']]
+        individual_team_entries = [e for e in entries if e['Team'] not in ['2TM', '3TM']]
         
-        if two_tm_entries and individual_team_entries:
-            # Player has both 2TM and individual team rows - prefer 2TM
-            result.extend(two_tm_entries)
-            print(f"Using 2TM row for {name} (preferred over {len(individual_team_entries)} individual team rows)")
+        if combined_entries and individual_team_entries:
+            # Player has both combined (2TM/3TM) and individual team rows - prefer combined
+            result.extend(combined_entries)
+            combined_label = ', '.join(set(e['Team'] for e in combined_entries))
+            print(f"Using {combined_label} row for {name} (preferred over {len(individual_team_entries)} individual team rows)")
         else:
-            # Player has only 2TM or only individual teams - keep all
+            # Player has only combined or only individual teams - keep all
             result.extend(entries)
     
     return result
+
+
+def dedupe_players(players_data):
+    """
+    Ensure only one entry per player remains.
+    Priority when choosing which entry to keep:
+      1) a '3TM' entry if present
+      2) a '2TM' entry if present
+      3) the entry with the most games ('G')
+      4) otherwise the first entry
+    """
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for p in players_data:
+        groups[p['Player']].append(p)
+
+    out = []
+    for name, entries in groups.items():
+        # prefer 3TM
+        three = [e for e in entries if e.get('Team') == '3TM']
+        if three:
+            out.append(three[0])
+            continue
+        two = [e for e in entries if e.get('Team') == '2TM']
+        if two:
+            out.append(two[0])
+            continue
+        # pick by most games if available
+        best = max(entries, key=lambda e: e.get('G', 0))
+        out.append(best)
+
+    return out
 
 
 def apply_manual_team_adjustments(players_data):
@@ -1176,20 +1280,75 @@ def apply_manual_team_adjustments(players_data):
         'Trae Young': 'WAS',  # Traded from ATL to WAS
         'Jeremiah Robinson-Earl': 'DAL',
         'PJ Hall': 'CHO',
-        'RayJ Dennis': 'LAC',
-        'Christian Koloko': 'TOR',
-        'Isaac Jones': 'DET'  # Traded from ATL to WAS
+        'RayJ Dennis': 'ATL',  # Use 3TM stats and assign to ATL
+        'Christian Koloko': 'ATL',  # Use 3TM stats and assign to ATL
+        'Isaac Jones': 'DET',  # Traded from ATL to WAS
+        'Dennis Schroder': 'CLE',  # Traded to CLE
+        'Dennis Schröder': 'CLE',  # Traded to CLE (alternate spelling)
+        'De\'Andre Hunter': 'SAC',  # Traded to SAC
+        'Vit Krejci': 'POR',  # Traded to POR
+        'Keon Ellis': 'CLE',
+        'Mac McClung': 'CHI',  # Traded to CLE
+        'Charles Bassey': 'PHI',
+        'Patrick Baldwin Jr.': 'PHI',
+        'Jock Landale': 'ATL',
+        'Ochai Agbaji': 'BKN',
+        'Chris Paul': 'TOR',
+        'Lonzo Ball': 'UTA',
+        'Nikola Vučević': 'BOS',
+        'Anfernee Simons': 'CHI',
+        'Chris Boucher': 'UTA',
+        'Guerschon Yabusele': 'CHI',
+        'Dalen Terry': 'NYK',
+        'Ousmane Dieng': 'MIL',
+        'James Harden': 'CLE',
+        'Darius Garland': 'LAC',
+        'Jared McCain': 'OKC',
+        'Tyus Jones': 'DAL',
+        'Collin Sexton': 'CHI',
+        'Coby White': 'CHO',
+        'Vince Williams Jr.': 'UTA',
+        'John Konchar': 'UTA',
+        'Jaren Jackson Jr.': 'UTA',
+        'Walter Clayton JR.': 'MEM',
+        'Taylor Hendricks': 'MEM',
+        'Georges Niang': 'MEM',
+        'Kyle Anderson': 'MEM',
+        'Jaden Ivey': 'CHI',
+        'Kevin Huerter': 'DET',
+        'Dario Šarić': 'DET'
+
     }
     
     adjusted_count = 0
-    for player in players_data:
-        if player['Player'] in adjustments:
-            old_team = player['Team']
-            new_team = adjustments[player['Player']]
-            player['Team'] = new_team
-            print(f"✓ Adjusted {player['Player']}: {old_team} -> {new_team}")
-            adjusted_count += 1
-    
+
+    # Group players by name for safe targeted reassignment
+    from collections import defaultdict
+    groups = defaultdict(list)
+    for p in players_data:
+        groups[p['Player']].append(p)
+
+    for name, new_team in adjustments.items():
+        entries = groups.get(name)
+        if not entries:
+            continue
+
+        # Prefer assigning to a combined row if present (3TM > 2TM)
+        combined = [e for e in entries if e.get('Team') == '3TM']
+        if not combined:
+            combined = [e for e in entries if e.get('Team') == '2TM']
+
+        if combined:
+            target = combined[0]
+        else:
+            # No combined row - pick the entry with most games
+            target = max(entries, key=lambda e: e.get('G', 0))
+
+        old_team = target.get('Team')
+        target['Team'] = new_team
+        adjusted_count += 1
+        print(f"[OK] Adjusted {name}: {old_team} -> {new_team}")
+
     print(f"Total adjustments applied: {adjusted_count}")
     return players_data
 
@@ -1218,6 +1377,10 @@ def main():
     
     # Add calculated 'First Made' field
     players_data = add_first_made_calculation(players_data)
+
+    # Final deduplication: keep only one entry per player (prefer 3TM -> 2TM -> most games)
+    players_data = dedupe_players(players_data)
+    print(f"After deduplication: {len(players_data)} players")
     
     # Get unique teams
     teams = sorted(set(p['Team'] for p in players_data))
