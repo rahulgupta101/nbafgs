@@ -1316,8 +1316,25 @@ def apply_manual_team_adjustments(players_data):
         'Kyle Anderson': 'MEM',
         'Jaden Ivey': 'CHI',
         'Kevin Huerter': 'DET',
-        'Dario Šarić': 'DET'
-
+        'Dario Šarić': 'DET',
+        'Jonathan Kuminga': 'ATL',
+        'Kristaps Porziņģis': 'GSW',
+        'Marvin Bagley III': 'DAL',
+        'Khris Middleton': 'DAL',
+        'Buddy Hield': 'ATL',
+        'Ayo Dosunmu': 'MIN',
+        'Luke Kennard': 'LAL',
+        'Cam Thomas': 'MIL',
+        'Jose Alvarado:': 'NYK',
+        'Walter Clayton': 'MEM',
+        'Trayce Jackson-Davis': 'TOR',
+        'Gabe Vincent': 'ATL',
+        'Rob Dillingham': 'CHI',
+        'Jevon Carter': 'ORL',
+        'Nick Richards': 'CHI',
+        'Julian Phillips': 'MIN',
+        'AJ Johnson': 'DAL',
+        'Leonard Miller': 'CHI'
     }
     
     adjusted_count = 0
