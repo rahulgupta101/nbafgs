@@ -1334,7 +1334,17 @@ def apply_manual_team_adjustments(players_data):
         'Nick Richards': 'CHI',
         'Julian Phillips': 'MIN',
         'AJ Johnson': 'DAL',
-        'Leonard Miller': 'CHI'
+        'Leonard Miller': 'CHI',
+        'Bennedict Mathurin': 'LAC',
+        'Kobe Brown': 'IND',
+        'Jose Alvarado': 'NYK',
+        'Jaden Hardy': 'WAS',
+        'Tyrese Martin': 'PHI',
+        'Isaiah Jackson': 'LAC',
+        'Jeremy Sochan': 'NYK',
+        'Amir Coffey': 'PHX',
+        'KJ Simpson': 'DEN',
+        'Xavier Tillman Sr.': 'CHO'
     }
     
     adjusted_count = 0
