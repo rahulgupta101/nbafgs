@@ -1344,7 +1344,11 @@ def apply_manual_team_adjustments(players_data):
         'Jeremy Sochan': 'NYK',
         'Amir Coffey': 'PHX',
         'KJ Simpson': 'DEN',
-        'Xavier Tillman Sr.': 'CHO'
+        'Xavier Tillman Sr.': 'CHO',
+        'Mo Bamba': 'UTA',
+        'Rayan Rupert': 'MEM',
+        'Josh Minott': 'BRK',
+        'Vít Krejčí': 'POR'
     }
     
     adjusted_count = 0
