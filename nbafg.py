@@ -1348,7 +1348,8 @@ def apply_manual_team_adjustments(players_data):
         'Mo Bamba': 'UTA',
         'Rayan Rupert': 'MEM',
         'Josh Minott': 'BRK',
-        'Vít Krejčí': 'POR'
+        'Vít Krejčí': 'POR',
+        'Ivica Zubac': 'IND'
     }
     
     adjusted_count = 0
